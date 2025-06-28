@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Support\Facades\Auth;
+
 
 class ProductController extends Controller
 {
@@ -19,13 +21,13 @@ class ProductController extends Controller
             $sortBy = 'id'; // fallback
         }
 
-        // $newSortOrder = $sortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
-        $products = Product::orderBy($sortBy, $sortOrder)->get();
-        // $products = Product::get();
+       $products = Product::with('user')->orderBy($sortBy, $sortOrder)->get();
+
         return view('products.index', compact('products', 'sortBy', 'sortOrder'));
     }
     public function create(Request $request)
     {
+        
         return view('products.create');
     }
     public function store(Request $request)
@@ -39,6 +41,7 @@ class ProductController extends Controller
             'name' => $request->name,
             'detail' => $request->detail,
             'image' => $request->image ? $request->image->store('images', 'public') : null,
+            'user_id' => auth()->id(),
         ]);
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
         
@@ -50,22 +53,34 @@ class ProductController extends Controller
     }
     public function edit(Request $request, $id)
     {
-        $product = Product::find($id);
+        $user = Auth::user();
+        $product = Product::findOrFail($id); // 👈 Load product first
+
+        $this->authorize('update', $product);
+
         return view('products.edit', compact('product'));
     }
     public function update(Request $request, $id)
     {
+        $user = Auth::user();
+
         $request->validate([
             'name' => 'required',
             'detail' => 'required',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
         $product = Product::find($id);
+
+        $this->authorize('update', $product);
+
         $product->update([
             'name' => $request->name,
             'detail' => $request->detail,
             'image' => $request->image ? $request->image->store('images', 'public') : $product->image,
         ]);
+
+        
+        
         // if ($request->hasFile('image')) {
         //     dd($request->file('image')->getMimeType());
         // }
@@ -75,7 +90,13 @@ class ProductController extends Controller
     }
     public function destroy(Request $request, $id)
     {
-        $product = Product::find($id)->delete();
+        $user = Auth::user();
+        $product = Product::find($id);
+
+        $this->authorize('delete', $product);
+
+        $product->delete();
+       
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
 }

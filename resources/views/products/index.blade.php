@@ -4,11 +4,11 @@
         <div class="card mt-5">
         <div class="card-header">Product Index</div>
         <div class="card-body">
-            @session('success')
-            <div class="alert alert-success">
-                {{ $value }}
-            </div>
-            @endsession
+            @if (session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
             <div class="d-flex justify-content-between mb-3">
                 <a href="{{ route("products.create") }}" class="btn btn-success btn-sm mb-3"><i class="fa fa-plus"></i> Create Product</a>
                 @php
@@ -23,6 +23,7 @@
                     <thead>
                         <tr>
                             <th scope="col" width="50">ID </th>
+                            <th scope="col">Publisher Name</th>
                             <th scope="col">Name</th>
                             <th scope="col">Detail</th>
                             <th scope="col" width="250">Action</th>
@@ -32,6 +33,7 @@
                        @foreach($products as $product)
                         <tr>
                             <td >{{ $product->id }}</td>
+                            <td >{{ $product->user->name ?? 'Unknown' }}</td>
                             <td>{{ $product->name }}</td>
                             <td>{{ $product->detail }}</td>
                             <td >
@@ -39,9 +41,14 @@
                                     @csrf
                                     @method('DELETE')
                                     <a href="{{ route('products.show', $product->id) }}" class="btn btn-primary btn-sm"><i class="fa fa-eye"></i> View</a>
-                                    <a href="{{ route('products.edit', $product->id) }}" class="btn btn-info btn-sm"><i class="fa fa-pencil"></i> Edit</a>
-                               
-                                    <button class="btn btn-danger btn-sm" type="submit"><i class="fa fa-trash"></i> Delete</button>
+                                   @can('update', $product)
+                                        <a href="{{ route('products.edit', $product->id) }}" class="btn btn-info btn-sm">
+                                            <i class="fa fa-pencil"></i> Edit
+                                        </a>
+                                    @endcan
+                                    @can('delete', $product)
+                                        <button class="btn btn-danger btn-sm" type="submit"><i class="fa fa-trash"></i> Delete</button>
+                                    @endcan
                                 </form>
                             </td>
                         </tr>
@@ -49,6 +56,18 @@
                     </tbody>
                 </table>
             </div>
+            {{-- TEMP DEBUG --}}
+            {{-- @if (auth()->check())
+                <div class="alert alert-info">
+                    Logged in as: {{ auth()->user()->name }} (ID: {{ auth()->id() }})
+                </div>
+            @else
+                <div class="alert alert-warning">
+                    Not logged in!
+                </div>
+            @endif --}}
+
+
             
         </div>
         </div>
